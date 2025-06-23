@@ -1,0 +1,229 @@
+/*-- scss:defaults --*/
+
+// Import font
+@import 'https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible&display=swap';
+
+$font-family-sans-serif: "Atkinson Hyperlegible", sans-serif;
+
+// University of Iowa Colors
+$ui-primary-yellow: #FFCD00;
+$ui-black: #000000;
+$ui-secondary-1: #63666A;
+$ui-secondary-2: #00558C;
+$ui-secondary-3: #00664F;
+$ui-secondary-4: #BD472A;
+
+// Updated presentation settings using Iowa colors
+$presentation-heading-color: $ui-black;
+$presentation-title-slide-text-align: "center";
+$link-color: $ui-secondary-3;
+$code-block-font-size: 0.9em;
+$justify-content: padding-top;
+$text-align: left;
+
+// Optional: Bold text color variable (if you prefer a different color)
+// $bold-color: green;
+
+/*-- scss:rules --*/
+
+:root {
+  --r-main-font-size: 30px;
+}
+
+/* Global Styles */
+body, .reveal {
+  background-color: #ffffff;
+  color: $ui-black;
+  font-family: $font-family-sans-serif;
+}
+
+a {
+  color: $link-color;
+  &:hover {
+    opacity: 0.8;
+    transition: opacity 0.3s ease-in-out;
+  }
+}
+
+/* Bold Text */
+b, strong {
+  color: $ui-secondary-3; // Change to $bold-color if desired
+}
+
+/* Slide Number Color */
+.reveal .slide-number {
+  color: $ui-secondary-1;
+}
+
+/* Accent Border for Top-Level Slides */
+.reveal .slides > section {
+  border-left: 5px solid $ui-primary-yellow;
+  padding-left: 15px;
+  margin-left: 10px;
+}
+
+/* For Slides with a Level-One Header (.has-h1) */
+/* Remove the full-slide border and apply a header accent instead */
+.reveal .slides > section.has-h1 {
+  border-left: none;
+  padding-left: 0;
+  margin-left: 10px;
+}
+
+.reveal .slides > section.has-h1 h1 {
+  position: relative;
+  padding-left: 20px;
+  margin-left: 10px;
+}
+
+.reveal .slides > section.has-h1 h1::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  background-color: $ui-primary-yellow;
+}
+
+/* Remove Border from Nested Vertical Slides */
+.reveal .slides section section {
+  border-left: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+/* Title Slide Styling */
+#title-slide {
+  .title {
+    text-align: center;
+    color: $ui-black;
+  }
+  .quarto-title-authors {
+    color: $ui-secondary-3;
+    text-align: center;
+    justify-content: center;
+    .quarto-title-authors {
+      padding-left: 0;
+      padding-right: 0;
+      width: 100%;
+    }
+  }
+  .date,
+  .subtitle {
+    color: $ui-secondary-2;
+    text-align: center;
+  }
+  .subtitle {
+    font-weight: bold;
+  }
+}
+
+/* Additional Elements */
+details > summary {
+  font-size: 0.75em;
+}
+
+/* Subtle Box Shadow for Content Blocks */
+.reveal .cell {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 10px;
+}
+
+/* Font Size Utility Classes */
+.giant  { font-size: 2em; }
+.xlarge { font-size: 1.5em; }
+.large  { font-size: 1.2em; }
+.medium { font-size: 0.9em; }
+.small  { font-size: 0.75em; }
+.tiny   { font-size: 0.5em; }
+
+/* Code Block Styling */
+.reveal code {
+  font-size: 0.8em;
+  white-space: pre;
+}
+.reveal .cell {
+  margin-bottom: 15px;
+}
+.reveal table td {
+  border-bottom: 0;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.reveal .theorem {
+  border: 2px solid darken($ui-secondary-3, 5%);
+  background-color: $ui-secondary-3;
+  color: #FFFFFF;
+  border-radius: 4px;
+  padding: 1em;
+  margin: 1em 0;
+
+}
+.reveal .theorem strong,
+.reveal .theorem b {
+  color: white;
+}
+blockquote > p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+blockquote {
+  padding-bottom: 0 !important;
+}
+.reveal pre.sourceCode code,
+.reveal pre code {
+  max-height: 550px;
+}
+.reveal .limit200 pre.sourceCode code,
+.reveal .limit200 pre code {
+  max-height: 200px;
+}
+.reveal div.sourceCode {
+  margin-bottom: 0.33em !important;
+}
+
+/* University of Iowa Logo in the Top Right */
+$ui-logo-url: "https://brand.uiowa.edu/sites/brand.uiowa.edu/files/styles/widescreen__1312_x_738/public/2020-05/Block%20IOWA-black%20on%20gold%402x.png?h=42ab2369&itok=EeG8mSs7";
+.reveal::before {
+  content: "";
+  position: fixed;
+  top: 10px;
+  right: 0px;
+  width: 10%;  // Set width as a percentage of the viewport
+  height: auto; // Maintain aspect ratio
+  aspect-ratio: 3 / 1; // Adjust based on your logo's natural dimensions
+  background: url($ui-logo-url) no-repeat;
+  background-size: contain;
+  background-position: center;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+
+.reveal .slide-number > a[href*='title-slide'] {
+  display: none;
+}
+
+/* Ensure that both inserted images and chunk-generated plots have the same styling */
+img, .figure img, .quarto-figure img {
+  border: 1px solid rgba(0, 0, 0, 0.1); /* Single faint border */
+  border-radius: 4px; /* Rounded corners */
+  padding: 5px; /* Spacing */
+  background-color: #ffffff; /* Uniform background */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Floating effect */
+  display: block;
+  margin: 10px auto; /* Center alignment */
+}
+
+/* Remove any additional border applied by Quarto’s figure wrapper */
+.cell {
+  border: none !important;
+  box-shadow: none !important;
+  background: none !important;
+  padding: 0 !important;
+}
+
+
+

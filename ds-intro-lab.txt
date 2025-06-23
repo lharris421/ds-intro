@@ -1,0 +1,48 @@
+# Instructions for lab corresponding to slides
+
+## R Package Setup
+1. Create a new folder wherever you prefer to store your work BUT NOT IN ANOTHER PROJECT DIRECTORY
+2. Open RStudio, in the upper right click the project button -> create a "New Project..." from an "Existing Directory"
+3. In the console run: install.packages("usethis")
+4. In the console run: usethis::create_package("."), it will warn you that this is already a project (select to proceed) and then as if you want to overwrite the current.Rproj file, and again proceed.
+5. It will open a new R session, you can close the old one.
+
+NOTE: This will create a README.md, this is an excelent place to describe the purpose and structure of your project.
+NOTE: The warnings in 4 can be avoided by skipping step 2, but I've found step 2 makes step 4 easier for most who are not familiar with the paths on their system.
+
+## Quarto Presentation Setup
+1. File > New File > Quarto Presentation
+2. Make the title "Palmer Penguins", add yourself as the author, select Reveal JS as the output, and make sure the engine is Knitr.
+3. Save the file with a descript name.
+4. Delete everything other than the YAML, and paste in the following setup chunk:
+
+```{r setup}
+library(palmerpenguins)
+library(dplyr)
+library(tidyr)
+library(gtsummary)
+library(ggplot2)
+
+## Load functions in package
+devtools::load_all(".")
+
+## Load penguins data
+data("penguins")
+
+set.seed(1234)
+speed <- round(8 + 0.1*(penguins_raw$`Flipper Length (mm)` - mean(penguins_raw$`Flipper Length (mm)`, na.rm = TRUE)) + rnorm(length(penguins_raw$`Flipper Length (mm)`)), 1)
+swim_speed <- tibble(ID = penguins_raw$`Individual ID`, `swim speed (km/h)` = speed) %>%
+  group_by(ID) %>%
+  summarise(`swim speed (km/h)` = first(`swim speed (km/h)`))
+```
+
+You may need to install packages if you do not already have them.
+
+As we go through the presentation, we will use this document to practice what we cover.
+
+## Notes on functions with dplyr / ggplot
+
+1. To use an argument in a function that takes a column of a data frame, inside the function it must be embraced whenever it is used: {{ argument }}
+2. If you'd like to process an argument as a string, you must embrace it in quotes inside a call to englue, i.e. englue("{{argument}}")
+
+

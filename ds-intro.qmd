@@ -1,0 +1,1619 @@
+---
+title: "Reproducible Data Science"
+subtitle: "with the tidyverse"
+author: "Logan Harris"
+footer: "ISIB 2025"
+format:
+  revealjs:
+    theme: slides.scss
+    slide-number: true
+    embed-resources: true
+    toc: true
+    toc-depth: 1
+editor: source
+code-block-border-left: true
+bibliography: ds-intro.bib
+execute: 
+  echo: true
+---
+
+```{r, echo=FALSE}
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(gt)
+library(gtsummary)
+library(ggplot2)
+library(DiagrammeR)
+
+## For data sets
+library(palmerpenguins)
+
+## Setting color palette
+library(wacolors)
+palette_choice <- "washington_pass"
+curr_palette <- wacolors[[palette_choice]]
+theme_set(theme_bw())
+
+patients <- tibble(
+  patient_id = 1:5,
+  name = c("Alice Smith", "Bob Johnson", "Charlie Davis", "Diana Evans", "Ethan Wright"),
+  age = c(30, 45, 30, 35, 50)
+)
+visits <- tibble(
+  visit_id = c(101, 101, 102, 101, 101, 101),
+  patient_id = c(1, 2, 1, 3, 5, 6),
+  reason = c("Check-up", "Flu", "Follow-up", "Allergy", "Physical", "Physical"),
+  bill_num = c(1001, 1002, 1003, 1004, 1005, 1010)
+)
+treatments <- tibble(
+  treatment_id = c(101, 102, 103, 104),
+  visit_num = c(102, 101, 101, 101),
+  patient_num = c(1, 2, 3, 5),
+  treatment = c("Blood Test", "Medication", "Allergy Shots", "Physical Therapy"),
+  bill_num = c(1006, 1007, 1008, 1009)
+)
+```
+
+
+# What is Data Science?
+
+## What is Data Science?
+
+**ChatGPT 4o:**
+
+*Data Science* is the interdisciplinary field that uses statistical methods, computer science, and domain knowledge to extract insights and make decisions from data.
+
+It encompasses the full data lifecycle: collection, cleaning, exploration, modeling, and communication — often leveraging automation and reproducibility through tools like R.
+
+**Logan:**
+
+How to answer questions and in an honest, accurate, rigorous, and reproducible way using data. This is often more an art than a science.
+
+# Reproducibility
+
+## What is reproduciblity in statistics / data science?
+
+```{r, echo=FALSE}
+nasem_tbl <- tribble(
+  ~Level,          ~`Same team?`, ~`Same data?`, ~`Same analysis pipeline?`, ~Name,
+  "Repeatability", "Yes",         "Yes",         "Yes",                     "Same lab / same setup",
+  "Reproducibility", "No",        "Yes",         "Yes",                     "Different team, identical data & code",
+  "Replicability",  "No",         "No",          "≈ (similar)",             "Different team, new data, comparable methods"
+)
+
+nasem_tbl |>
+  gt() |>
+  tab_header(title = md("**NASEM Taxonomy of Computational Reliability**")) |>
+  cols_label(
+    `Same team?`            = md("Same<br>team?"),
+    `Same data?`            = md("Same<br>data?"),
+    `Same analysis pipeline?` = md("Same<br>analysis<br>pipeline?")
+  ) |>
+  tab_source_note(md("Source: @nasem2019"))
+```
+
+**In short:** Reproducibility not only means that you can reproduce your results, but if you handed me your code (and data) that I could achieve the same results.
+
+## Reproducible design
+
+If you are using Quarto (or R Markdown) and are able to compile your documents, you are already on your way to reproducibility.
+
+Quarto starts from a fresh session every time it is rendered, not relying on objects in your environment.
+
+It also runs linearly from top to bottom, forcing code to execute sequentially so every object is created before it is used, eliminating hidden dependencies and making the workflow fully reproducible.
+
+## Document structure for reproducibility
+
+```{mermaid}
+%%| label: fig-data-flow
+%%| fig-cap: "Data‑to‑results pipeline (arrows represent code)."
+%%| echo: FALSE
+graph LR
+  %% nodes
+  A["data"] -->|<code>analysis</code>| B["results"]
+  B          -->|<code>summarization</code>| C["tables / figures"]
+
+  %% style the “code arrows”
+  linkStyle 0 stroke:#1F77B4,stroke-width:3px;
+  linkStyle 1 stroke:#1F77B4,stroke-width:3px;
+```
+
+- For a light weight analysis (runs in < 1 minute), it is fine to include the entire process in a single document
+- However this is often not feasible, analyses can sometimes take hours or days to run
+- In this case, analyses should be contained in separate scripts (in a `scripts` folder) and results should be stored in a cache (fancy term for results folder)
+- Then, results can be read into the Quarto document for table / figure creation
+- This should be done in a way that makes it clear what script produced what results
+  - e.g. Save the name of the script / parameters used in the results file
+  
+## Saving demo
+
+See "saving-demo.R" file.
+
+## Practical Tips
+
+- Start simple and build
+- Run your code early and often
+- Comment your code (descriptively but concisely explain WHY)
+- Include library calls and data loaded in a setup chunk at the top of your document
+- Use functions!
+  - Store functions in a folder called "R" and `source()` them in the files you use them.
+  - More advanced but worth learning: Set up your project as a package and load the package (see [usethis](https://usethis.r-lib.org/))
+
+## Reproducibile Reports with Quarto
+
+- Quarto is a modern alternative to R Markdown
+- Quarto natively supports other languages that R and it a stand alone tool from R
+- A single syntax drives all different output types (doesn't require separate packages)
+- Most importantly, R Markdown is mostly mature and Quarto is the successor and will be the place new features are implemented.
+- That said, most of what you have already learned is the same for Quarto as it is R Markdown
+
+## YAML heading
+
+A YAML is specified at the top of the Quarto (`.qmd`) file and can be used to set general configuration for the file.
+
+Some things it can control are...
+
+- global code chunk options
+- title, subtitle, author, and date
+- format settings (theme, code chunks, table of contents)
+- link a bibliography if your document has citations. The citations from the bibliography can be referenced throughout the Quarto document.
+
+## YAML Format for slides
+
+```{r, eval = FALSE, echo = TRUE}
+---
+title: "Creating Presentations with Quarto"
+author: "Logan Harris"
+format: 
+  revealjs:
+    embed-resources: true
+    slide-number: true
+    smaller: true
+    footer: Creating Presentations with Quarto
+---
+```
+
+## Creating Slides
+
+In presentations, rather than documents,
+  
+  - one `#` creates a title slide with centered text
+  - two `#` create a regular slide with the title
+  - three `#` create subsections on a slide
+  - three `-` to create a slide without a title
+
+# A Title Slide (`# A Title Slide`) {.unlisted}
+
+## A Regular Slide (`## A Regular Slide`)
+
+### A subsection (`### A subsection`)
+
+---
+
+A slide without a title, created with `---`.
+
+## Incremental lists {.smaller}
+
+If you would like your list to show up one by one, you can use an incremental lists. 
+
+You can do this using `::: {.incremental}`. For example, 
+
+```{r, eval = FALSE, echo = TRUE}
+::: {.incremental}
+
+1. bullet 1
+2. bullet 2
+3. bullet 3
+
+:::
+```
+
+will produce ...
+
+::: {.incremental}
+
+1. bullet 1
+2. bullet 2
+3. bullet 3
+
+:::
+
+. . .
+
+Be sure to leave an empty line before `::: {.incremental}` or the list will not render properly. 
+
+. . .
+
+If you'd like this to be the default behavior, you can set `incremental: true` under revealjs in the YAML.
+
+## Incremental text
+
+Part 1: Additionally, you can make any text (or figures, code chunks, etc.) incremental by separating each portion you want to be incremental with `. . .`
+
+. . .
+
+Part 2: Again, make sure there are blank lines before and after `. . .` and note that there are spaces between each period in `. . .`.
+
+. . .
+
+Part 3: Each of the 3 "Parts" on this slide were separated by `. . .`
+
+
+## Incremental text
+
+This was the full text from the previous slide:
+
+```{r, eval = FALSE, echo = TRUE}
+Part 1: Additionally, you can make any text incremental by separating each portion you want to be incremental with `. . .`
+
+. . .
+
+Part 2: Again, make sure there are blank lines before and after `. . .` and note that there are spaces between each period in `. . .`.
+
+. . .
+
+Part 3: Each of the 3 "Parts" on this slide were separated by `. . .`
+```
+
+## Multiple columns
+
+::: {.columns}
+
+::: {.column width="50%"}
+
+To create multiple columns for text, code, or figures on a a slide we use a div.
+
+To do this surround all the columns with `::: {.columns}` and `:::`.
+
+Then surround each individual columns content with `::: {.column width="50%"}` and `:::`.
+
+:::
+
+::: {.column width="50%"}
+
+Again remember to leave a blank line before starting the div. 
+
+You can create more than two columns but the percentages need to add up to 100%. 
+
+Be sure to specify the percentage width in quotes and do not leave space around the `=`.
+
+:::
+
+:::
+
+## Multiple columns
+
+This is the code that created the previous slide:
+
+```{r, eval=FALSE, echo=TRUE}
+::: {.columns}
+
+::: {.column width="50%"}
+
+To create multiple columns for text, code, or figures on a a slide we use a div.
+
+To do this surround all the columns with `::: {.columns}` and `:::`.
+
+Then surround each individual columns content with `::: {.column width="50%"}` and `:::`.
+
+:::
+
+::: {.column width="50%"}
+
+Again remember to leave a blank line before starting the div. 
+
+You can create more than two columns but the percentages need to add up to 100%. 
+
+Be sure to specify the percentage width in quotes and do not leave space around the `=`.
+
+:::
+
+:::
+```
+
+## Align a figure on the slide
+
+To size or align a figure we use the same code chunk options as we did in quarto documents.
+
+For example, we can align a plot in the center of the slide by setting `fig.align='center'`.
+
+```{r, fig.align='center', fig.width=5, fig.height=3, echo=FALSE}
+ggplot(cars, aes(x = speed, y = dist)) +
+  geom_point(color = "dodgerblue")
+```
+
+Note: Figures will usually take up as much space as possible, you can adjust their width and height with `fig.width` and `fig.height` (height in inches).
+
+## Tables {.smaller}
+
+The default print out for tables is pretty sad:
+
+```{r tibble_definition}
+df <- tibble(
+  x = c(1, 3, 5), 
+  y = c("1", "3", "5"), 
+  z = c(TRUE, FALSE, TRUE)
+)
+df
+```
+
+If you need to print out a table and you want it to be a bit prettier, you can just wrap it in `gt` (see [gt](https://gt.rstudio.com) package for making further customization):
+
+```{r gt_example}
+gt(df)
+```
+
+## Themes
+
+There are 11 themes built in for a Reveal JS slide show presentation. Themes
+are set in the YAML at the top of your Quarto document. Visit the Quarto 
+website for [themes](https://quarto.org/docs/presentations/revealjs/#themes).
+
+```{r, eval = FALSE, echo = TRUE}
+---
+title: "Presentation"
+format:
+  revealjs:
+    theme: dark
+---
+```
+
+You can also add a style sheet file (`.scss`) for more fine tuned style control. See presentation repo for example.
+
+## Helpful tips
+
+With `.html` files, if you have included external dependencies such as images or style sheets you will likely want to include `embed-resources: true`. This allows the file produced to be stand alone.
+
+```{r embed_resources, echo = TRUE, eval = FALSE}
+subtitle: "Creating Presentations with Quarto"
+author: "Logan Harris"
+date: "`r Sys.Date()`"
+format: 
+  revealjs:
+    embed-resources: true
+```
+
+See Quarto's website for even more options: [Markdown Basics](https://quarto.org/docs/authoring/markdown-basics.html)
+
+<!-- # tidyverse -->
+
+<!-- ## tidyverse -->
+
+<!-- The tidyverse is an opinionated collection of R packages designed for data science.  -->
+
+<!-- Built around a shared: -->
+
+<!-- - Design philosophy: prioritize readability, consistency, and user-friendly syntax -->
+
+<!-- - Grammar: functions follow predictable patterns (e.g., verbs like `filter()`, `mutate()`) -->
+
+<!-- - Data structures: centered on tibbles and rectangular data -->
+
+<!-- [tidyverse overview](https://www.tidyverse.org/packages/) -->
+
+<!-- ## Tidy data -->
+
+<!-- The `tidyverse` is based on the idea of tidy data, so the functions are designed with this sort of data in mind. -->
+
+<!-- Definitions: -->
+
+<!-- - *variable*: quantity or property that you can measure -->
+<!-- - *value*: state of a measured variable -->
+<!-- - *observation*: set of values measured under similar conditions -->
+
+<!-- ## Tidy data -->
+
+<!-- Properties of tidy data: -->
+
+<!-- 1. Each variable is in its own column. -->
+<!-- 2. Each observation in its own row. -->
+<!-- 3. Each value is in its own cell. -->
+
+<!-- ![](../images/tidy_data.png){fig-align=center} -->
+
+<!-- ## Example (tidy data) -->
+
+<!-- The `flights` data set from the package `nycflights13` is an example of a tidy -->
+<!-- data set. -->
+
+<!-- ```{r, echo = TRUE} -->
+<!-- flights |> -->
+<!--   slice_head(n = 5) -->
+<!-- ``` -->
+
+
+<!-- ## Example (non-tidy data) -->
+
+<!-- The `billboard` data set from `tidyr` is an example of non-tidy data. -->
+
+<!-- The variable `week` is contained in the columns `wk1` to `wk76`. This is what is known as wide format. -->
+
+<!-- ```{r, echo = TRUE} -->
+<!-- billboard |>  -->
+<!--   slice_head(n = 5) -->
+<!-- ``` -->
+
+# dpylr / tidyr
+
+## piping (`|>`) {.smaller}
+
+Base R comes shipped with a pipe operator: `|>`
+
+. . .
+
+The pipe operator takes what is on the left hand side and passes it as the first argument to the function on the right hand side. i.e. `x |> f(y)` is interpreted as `f(x, y)`.
+
+. . .
+
+This may seem trivial at first, but as your code gets more complex it leads to much more readable and error free code.
+
+. . .
+
+For example
+
+```{r}
+round(mean(sqrt(1:10)))
+```
+
+. . .
+
+could be written as:
+
+```{r}
+1:10 |>
+  sqrt() |>
+  mean() |>
+  round()
+```
+
+## Data
+
+For this section we will be using the `penguins` data from `palmerpenguins`.
+
+```{r, echo = FALSE}
+penguins |>
+  slice_head(n = 10) |>
+  gt()
+```
+
+
+## `filter()` data (subset data)
+
+- `filter()` subsets a data frame based on the rows satisfying conditions. 
+- The conditions are specified with logical tests. 
+- Each row is evaluated as `TRUE` or `FALSE` based on the tests and the `TRUE` rows are returned.
+
+. . .
+
+Code format:
+
+```{r, eval = FALSE}
+<DATA> |> 
+  filter(<LOGICAL TEST(S) WITH COLUMN(S) SEPERATED BY ,>)
+```
+
+. . .
+
+::: {.callout-tip}
+`filter()` does not alter the original tibble. If you want to save the filtered data, you must assign the result to a new object. The same is true of other `dplyr` and `tidyr` functions.
+:::
+
+## `filter()` example: equal to (`==`)
+
+Use the double equal sign to test for equality.
+
+```{r}
+penguins |> 
+  filter(species == "Adelie") |> slice_head(n = 10) |> gt()
+```
+
+<!-- ## `filter()` example: equal to (`==`) -->
+
+<!-- Under the hood, what is happening? -->
+
+<!-- . . . -->
+
+<!-- `filter()` gets the logical vector from the condition supplied: -->
+
+<!-- ```{r} -->
+<!-- penguins$species[1:10] == "Adelie" -->
+<!-- ``` -->
+
+<!-- Then uses this to return the rows where the corresponding values are true. -->
+
+## `filter()` example: multiple conditions
+
+Specify multiple conditions within `filter()` using `&` (symbol for **and**) or `|` (symbol for **or**).
+
+. . . 
+
+Here we filter down to Adelie penguins from Torgersen island:
+
+```{r}
+penguins |> 
+  filter(species == "Adelie" & island == "Torgersen") |> 
+  slice_head(n = 8) |> gt()
+```
+
+## `filter()` example: multiple conditions
+
+Alternatively, you can specify multiple conditions that each row must meet by separating them with a `,`. These are treated the same as they would be if you used `&`. This is equivalent to the example on the previous slide:
+
+```{r}
+penguins |> 
+  filter(
+    species == "Adelie",
+    island == "Torgersen"
+  ) |> slice_head(n = 8) |> gt()
+```
+
+<!-- ## Working with `NA` (missing values) -->
+
+<!-- Recall that, in R, missing values are represented as `NA`. -->
+
+<!-- ```{r} -->
+<!-- x <- c(4, 7, NA, 5) -->
+<!-- ``` -->
+
+<!-- `is.na()` evaluates which elements of the vector are missing, returning a logical vector (i.e. `TRUE` or `FALSE`). -->
+
+<!-- ```{r} -->
+<!-- is.na(x) -->
+<!-- ``` -->
+
+<!-- . . . -->
+
+<!-- `drop_na()` from `tidyr` drops rows with a missing value in the specified column(s): -->
+
+<!-- ```{r, eval = FALSE} -->
+<!-- penguins |>  -->
+<!--   drop_na(bill_length_mm, flipper_length_mm) |> slice_head(n = 10) |> gt() -->
+<!-- ``` -->
+
+<!-- . . . -->
+
+<!-- To drop all rows with a missing value in any column, use the following: -->
+
+<!-- ```{r, eval = FALSE} -->
+<!-- penguins |>  -->
+<!--   drop_na() |> # no column specified -->
+<!--   slice_head(n = 10) |> gt()   -->
+<!-- ``` -->
+
+## Calculating summary statistics  
+
+To calculate data summaries we use `summarize()` which returns one row summarizing all observations in the data set. 
+
+Code format:
+
+```{r, eval = FALSE}
+<DATA> |> 
+  summarize(
+    <SUMMARY COL1> = <SUMMARY OPERATION WITH EXISTING COLUMN1>,
+    <SUMMARY COL2> = <SUMMARY OPERATION WITH EXISTING COLUMN2>
+  )
+```
+
+## Summary functions to use within `summarize()`
+
+| Purpose        | Functions                    |
+|----------------|------------------------------|
+| Center         | `mean()`, `median()`         |
+| Spread         | `sd()`, `IQR()`              | 
+| Range          | `min()`, `max()`             | 
+| Position       | `first()`, `last()`, `nth()` | 
+| Count          | `n()`, `n_distinct()`        | 
+| Logical        | `any()`, `all()`             |
+
+
+## `Summarize()` example
+
+Find the average and the standard deviation of body masses in `penguins`:
+
+```{r}
+penguins |> 
+  drop_na(body_mass_g) |>
+  summarize(
+    mean_body_mass = mean(body_mass_g), 
+    sd_body_mass   = sd(body_mass_g),
+    count       = n()
+  ) |> gt() 
+```
+
+## Using `group_by()`
+
+`group_by()` can be used to make our data grouped by a categorical variable.
+
+When we pipe data to `group_by()` the output retains groups:
+
+```{r}
+penguins |> 
+  group_by(species) |>
+  slice_head(n = 2)
+```
+
+## Grouped data with `summarize()`
+
+If grouped data is used with `summarize()` then the summary is computed group-wise.
+
+```{r}
+penguins |> 
+  drop_na(body_mass_g) |>
+  group_by(species) |> 
+  summarize(
+    mean_body_mass = mean(body_mass_g), 
+    sd_body_mass   = sd(body_mass_g),
+    count       = n()
+  ) |> gt() 
+```
+
+A `tibble` is returned with one row for each combination of the grouping variable(s) and the specified statistic(s) in the column(s).
+
+## `summarize()` by more than one group
+
+We can also group by more than one variable.
+
+```{r}
+#| output-location: column
+penguins |> 
+  drop_na(flipper_length_mm) |>
+  group_by(species, sex) |> 
+  summarize(
+    mean_body_mass = mean(body_mass_g), 
+    sd_body_mass   = sd(body_mass_g),
+    count       = n()
+  ) |> gt() 
+```
+
+
+## ungroup data
+
+Note that once data is grouped, it retains those groupings.
+
+This can lead to unexpected behavior in later operations if you are not anticipating operations to be done by group.
+
+I recommend that you `ungroup()` once you are finished performing the operations that needed the grouping.
+
+Use `ungroup()` to remove the groups in the data frame:
+
+```{r, eval = FALSE}
+penguins |> 
+  drop_na(flipper_length_mm) |>
+  group_by(species, sex) |> 
+  summarize(
+    mean_body_mass = mean(body_mass_g), 
+    sd_body_mass   = sd(body_mass_g),
+    count       = n()
+  ) |>
+  ungroup()
+```
+
+<!-- ## Other group respecting functions -->
+
+<!-- ::: {.callout-tip} -->
+
+<!-- Grouped data can be used alongside `filter()` to identify groups that meet a condition.  -->
+
+<!-- All rows from the passing groups are retained. e.g. -->
+
+<!-- Find all `homeworld` (groups) bigger than a threshold with `filter()`: -->
+
+<!-- ```{r} -->
+<!-- penguins |>  -->
+<!--   group_by(species) |>  -->
+<!--   filter(n() > 5) -->
+<!-- ``` -->
+
+<!-- ::: -->
+
+## `count()` observations per group
+
+`count()` allows us to quickly count the number of observations per group.
+
+```{r}
+penguins |> 
+  count(species) |> gt()
+```
+
+`count()` is equivalent to using `group_by()` and `summarize()` in the following manner:
+
+```{r, eval = FALSE}
+penguins |> 
+  group_by(species) |> 
+  summarize(n = n())
+```
+
+## `select()` columns from data
+
+- `select()` keeps or drops variables (columns) from a data frame
+-  Select multiple columns by separating column names with commas
+-  Column order is determined by the input order
+
+Code format:
+
+```{r, eval=FALSE}
+<DATA> |> 
+  select(<COLUMN NAME(S) SEPERATE BY ,>)
+```
+
+
+## `select()` column example
+
+We keep `species` and `bill_length_mm` from `penguins`
+
+```{r}
+penguins |> 
+  select(species, bill_length_mm) |> 
+  slice_head(n = 10) |> gt() 
+```
+
+## `select()` range of consecutive columns
+
+Just as `:` can be used to create a sequence of integers, e.g. `1:3 =`
+`r 1:3`, the colon operator can be used to select a range of consecutive
+columns.
+
+. . .
+
+Use `:` between column names:
+
+```{r}
+penguins |> 
+  select(species:bill_length_mm) |> 
+  colnames() 
+```
+
+## De`select()` columns
+
+Use `!` in front of a variable to drop (deselect) a column:
+
+```{r}
+penguins |> 
+  select(!species) |> slice_head(n = 10) |> gt() 
+```
+
+## De`select()` multiple columns
+
+To drop multiple columns, place `!` in front of a vector of the variable
+names to drop. 
+
+```{r}
+penguins |> 
+  select(!c(species, island)) |> 
+  colnames()
+```
+
+::: {.callout-warning}
+
+The following **does not work**:
+
+```{r}
+penguins |> 
+  select(!species, !island) |>
+  colnames()
+```
+
+:::
+
+## `select()` helper functions
+
+Columns can also be selected with the help of functions. 
+
+| Function        | Selects                                                               |
+|-----------------|-----------------------------------------------------------------------|
+| `starts_with()` | columns starting with specified prefix                                |
+| `ends_with()`   | columns ending with specified suffix                                  |
+| `contains()`    | columns containing specified string                                   |
+| `where()`       | columns where the result is `TRUE` after applying function `fn` to data |
+| `last_col()`    | `n`th column from the end                                             |
+| `group_cols()`  | grouping columns                                                      |
+| `everything()`  | all columns                                                           |
+| `any_of()`      | any columns from a specified character vector                         |
+| `all_of()`      | all columns from a specified character vector                         |
+| `num_range()`   | matches a numerical range like x01, x02, x03, ...                     |
+
+## Mutating columns
+
+`mutate()` creates a new column as a function of existing variables.
+
+Code format:
+
+```{r, eval = FALSE}
+<DATA> |> 
+  mutate(
+    <new_col1> = <contents of new column>,
+    <new_col2> = <contents of new column>
+  )
+```
+
+
+## Create a new column
+
+By default, the new column is created at the end of the data frame.
+
+```{r}
+penguins |> 
+  select(species:bill_length_mm) |> 
+  mutate(
+    bill_length_in = (bill_length_mm / 10) / 2.54
+  ) |> 
+  slice_head(n = 3) |> gt()
+```
+
+## Useful functions within `mutate()`
+
+::: {.incremental}
+
+- mathematical functions, e.g. `*`, `log()`, `abs()`
+- rounding functions: `round()`, `floor()`, `ceiling()`
+- logical comparisons, e.g. `>`
+- cumulative functions: `cumsum()`, `cummean()`, `cummin()`
+  - e.g.: use `cummean()` to calculate a rolling average, this is helpful when you have groups observed over time
+- `str_detect()` from `stringr`: detects the presence of a `pattern` within a `string` and return a logical value
+- `lead()`/`lag()`: finds the next/previous values in a vector/column
+  - useful in time series data, e.g. compute the difference between current time and previous time
+- `row_number()`
+
+:::
+
+## Relational data
+
+- So far, we have worked with one table at a time.
+- However, in practice, data is often stored across multiple tables.
+  - this is known as relational data
+  - the data are related to each other through a **key**.
+  - Example: SQL databases
+
+## What are keys?
+
+Keys are variables that indicate how rows in different tables are related. There are two key types we will focus on:
+
+1. **primary key:** a variable (or set of variables) uniquely identifying each observation
+    - *compound key:* type of primary key with more than one variable
+2. **foreign key:** a variable (or set of variables) corresponding to a primary key in another table
+
+**Example:**
+
+![](lec11_diagram.png){fig-align=center}
+
+Understanding the keys in your data is crucial for joining data sets.
+
+## Checking primary keys
+
+Keys uniquely identify observations, so in a table displaying primary keys, each primary key should not occur more than once.
+
+A quick way to check keys is to `count()` by the key variable(s) and look for rows with `n > 1`. 
+
+Additionally, you should also check for missing values in your primary keys. There should not be any missing values since if a value is missing, it cannot identify an observation.
+
+. . .
+
+```{r, echo = TRUE}
+patients |> 
+  count(patient_id) |> 
+  filter(n > 1)
+```
+
+<!-- ## Mutating Joins -->
+
+<!-- A mutating join adds new variables to one data frame from matching observations in another. -->
+
+<!-- . . . -->
+
+<!-- **How do mutating join work?** -->
+
+<!-- First, they match observations by their keys. -->
+
+<!-- Then, they copy variables from one data frame to another. -->
+
+<!-- . . . -->
+
+<!-- Note that new variables from the join are added to the right of the existing variables, just like in the function `mutate()`. -->
+
+<!-- . . . -->
+
+<!-- There are 4 types of mutating joins, but we will just cover the left join. -->
+
+## `left_join()`
+
+Code format:
+
+```{r, eval=FALSE, echo = TRUE}
+<TABLE_1> |> 
+  left_join(<TABLE_2>, by = join_by(join_var))
+```
+
+- Must specify two tables to join and the variables(s) to join tables by (keys)
+- Think of "TABLE 1" as the *left* table and "TABLE 2" as the *right* table
+- `left_join()` keeps all rows from the left table and adds all columns for the matching rows from the right table that correspond to the left table
+
+
+## Left join example
+
+::: {.columns}
+
+::: {.column width="50%"}
+
+```{r, echo = TRUE}
+patients |> gt()
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r, echo = TRUE}
+visits |> gt()
+```
+
+:::
+
+:::
+
+```{r, echo = TRUE}
+patients |>
+  left_join(visits, by = join_by(patient_id)) |> slice_head(n = 5) |> gt()
+```
+
+
+. . .
+
+By default, if the `by` argument is not specified, `left_join()` will perform the join with all variables in common between the two tables. 
+
+Sometimes this is what you want to do but other times you do not want to join by all common variables.
+
+## Left join example
+
+<!-- Verbally explain one-to-one, one-to-many, etc -->
+
+In the previous example, there were rows in `patients` that:
+
+- had more than one match in `visits` (one-to-many)
+- had a single match in `visits` (one-to-one)
+- had no matches in `visits`
+
+In many cases, we expect a one-to-one relationship or a many-to-one relationship (i.e. left join patients to visits). 
+
+In these cases, the output will have the same number of rows as the left table as we are just adding the columns from the right table to the corresponding rows on the left.
+
+Regardless, it is good to have an idea of what you are expecting the results to look like so if there are discrepancies you can figure out why (because usually this indicates a complexity that was missed).
+
+<!-- allude to filtering joins -->
+
+## Join by differing key names
+
+Sometimes the joining columns between the tables do not have the same column names. In this case, we specify both column names within `join_by()`.
+
+Code format:
+
+```{r, eval=FALSE, echo = TRUE}
+<TABLE_1> |> 
+  left_join(<TABLE_2>, by = join_by(tab1_var == tab2_var))
+```
+
+# ggplot2
+
+`gg` stands for "grammar of graphics".
+
+. . .
+
+"grammar of graphics" means `ggplot` creates graphics in layers sequentially added to the graphic.
+
+. . .
+
+Here is a typical shell of what the code looks like to create a plot:
+
+```{r, eval=FALSE}
+ggplot(DATA, mapping = aes(x = COLUMN, y = COLUMN)) +
+  geom_*()
+```
+
+:::{.incremental}
+- `ggplot`: set up the canvas
+- `aes`: set which variables to plot
+- `geom_*()`: set the type of plot to make
+
+:::
+
+## ggplot example, step 1
+
+We want to make a plot to investigate the relationship between `bill_depth_mm` and `body_mass_g`.
+First, we use `ggplot()` to create the base layer canvas.
+
+```{r, fig.align='center'}
+ggplot(penguins, aes(x = bill_length_mm, y = body_mass_g))
+```
+
+## ggplot example, step 2
+
+Next we add a geom function to specify the type of plot we want to make. 
+
+::: {.callout-tip}
+ggplot layers are connected by placing `+` at the **end** of each line.
+:::
+
+```{r, warning = FALSE, fig.align='center'}
+ggplot(penguins, aes(x = bill_length_mm, y = body_mass_g)) +
+  geom_point()
+```
+
+## ggplot example, step 3
+
+Then we can add a title and change the axis labels.
+
+```{r, warning = FALSE, fig.align='center'}
+#| code-line-numbers: "3|4|5"
+ggplot(penguins, aes(x = bill_length_mm, y = body_mass_g)) +
+  geom_point() +
+  xlab("Bill Length (mm)") +
+  ylab("Body Mass (g)") +
+  labs(title = "Relationship between Bill Length and Body Mass")
+```
+
+## Common geoms
+
+| Geom               | Output          | Input                         |
+|--------------------|-----------------|-------------------------------|
+| `geom_point()`     | points          | 2 continuous var.             |
+| `geom_line()`      | lines           | 2 continuous var.             |
+| `geom_histogram()` | histogram       | 1 continuous var.             |
+| `geom_densty()`    | density         | 1 continuous var.             |
+| `geom_boxplot()`   | box plot        | 1 continuous var.             |
+| `geom_bar()`       | bars            | 1 discrete var.               |
+| `geom_col()`       | columns         | 1 discrete, 1 continuous var. |
+| `geom_smooth()`    | smooth line     | 2 continuous var.             | 
+| `geom_hline()`     | horizontal line | y-intercept                   |    
+| `geom_vline()`     | vertical line   | x-intercept                   |
+| `geom_abline()`    | custom line     | `a + bx`                      |
+
+
+## Aesthetic arguments
+
+Aesthetic arguments can be specified to adjust the appearance of a geom.
+
+. . .
+
+To find out the aesthetics arguments a specific geom uses, you can consult the geom's help documentation.
+
+`?geom_point`
+
+## Aesthetic arguments: color
+
+For example, the color of all points can be changed...
+```{r, warning=FALSE, fig.align='center'}
+#| code-line-numbers: "2"
+ggplot(penguins, aes(x = bill_length_mm, y = body_mass_g)) +
+  geom_point(color = "skyblue") + # Can also set with a hexadecimal
+  xlab("Bill Length (mm)") +
+  ylab("Body Mass (g)") +
+  labs(title = "Relationship between Bill Length and Body Mass")
+```
+
+## Aesthetic arguments: color
+
+...or we can change the color based on another variable.
+
+```{r, warning=FALSE, fig.align='center'}
+#| code-line-numbers: "1"
+ggplot(penguins, aes(x = bill_length_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  xlab("Bill Length (mm)") +
+  ylab("Body Mass (g)") +
+  labs(title = "Relationship between Bill Length and Body Mass")
+```
+
+Note that when a variable is added to an aesthetic other than `x` or `y`, a legend appears.
+
+<!-- ## Aesthetic arguments: fill -->
+
+<!-- Fill and color are similar in that they both alter colors, but the argument -->
+<!-- of interest depends on which geom you are using and the desired effect. -->
+
+<!-- ::: {.columns} -->
+
+<!-- ::: {.column width="50%"} -->
+
+<!-- ```{r} -->
+<!-- ggplot(penguins, aes(x = bill_depth_mm)) + -->
+<!--   geom_histogram(fill = "#94AA3D") + -->
+<!--   xlab("Bill Depth (mm)") + -->
+<!--   ylab("Count") -->
+<!-- ``` -->
+
+<!-- ::: -->
+
+<!-- ::: {.column width="50%"} -->
+
+<!-- ```{r} -->
+<!-- ggplot(penguins, aes(x = bill_depth_mm)) + -->
+<!--   geom_histogram(color = "#94AA3D") + -->
+<!--   xlab("Bill Depth (mm)") + -->
+<!--   ylab("Count") -->
+<!-- ``` -->
+
+<!-- ::: -->
+
+<!-- ::: -->
+
+<!-- ## Aesthetic arguments: size -->
+
+<!-- The size of all points can be changed: -->
+
+<!-- ```{r, fig.align='center'} -->
+<!-- ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g)) + -->
+<!--   geom_point(size = 4) + -->
+<!--   xlab("Flight Bill Depth (mm)") + -->
+<!--   ylab("Body Mass (g)") -->
+<!-- ``` -->
+
+## Aesthetic arguments: size
+
+You can also map continuous variables to certain aesthetics:
+
+```{r, fig.align='center'}
+ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g, size = bill_length_mm)) +
+  geom_point()  +
+  xlab("Bill Depth (mm)") +
+  ylab("Body Mass (g)")
+```
+
+<!-- ## Aesthetic arguments: shape -->
+
+<!-- ```{r, warning=FALSE, fig.align='center'} -->
+<!-- #| code-line-numbers: "2" -->
+<!-- ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g)) + -->
+<!--   geom_point(shape = 4) + -->
+<!--   xlab("Bill Depth (mm)") + -->
+<!--   ylab("Body Mass (g)") -->
+<!-- ``` -->
+
+<!-- ## Aesthetic arguments: shape cont. -->
+
+<!-- The shape argument can be set to an integer from 1 to 25: -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- shapes <- data.frame( -->
+<!--   shape = c(0:19, 22, 21, 24, 23, 20), -->
+<!--   x = 0:24 %/% 5, -->
+<!--   y = -(0:24 %% 5) -->
+<!-- ) -->
+<!-- ggplot(shapes, aes(x, y)) +  -->
+<!--   geom_point(aes(shape = shape), size = 5, fill = "red") + -->
+<!--   geom_text(aes(label = shape), hjust = 0, nudge_x = 0.15) + -->
+<!--   scale_shape_identity() + -->
+<!--   expand_limits(x = 4.1) + -->
+<!--   theme_void() -->
+<!-- ``` -->
+
+<!-- ## Aesthetic arguments: shape cont. -->
+
+<!-- Alternatively, you can set shape to a **single character**, such as `*`, to use as a -->
+<!-- plotting symbol, or the **name of a shape** -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- shape_names <- c( -->
+<!--   "circle", paste("circle", c("open", "filled", "cross", "plus", "small")), "bullet", -->
+<!--   "square", paste("square", c("open", "filled", "cross", "plus", "triangle")), -->
+<!--   "diamond", paste("diamond", c("open", "filled", "plus")), -->
+<!--   "triangle", paste("triangle", c("open", "filled", "square")), -->
+<!--   paste("triangle down", c("open", "filled")), -->
+<!--   "plus", "cross", "asterisk" -->
+<!-- ) -->
+
+<!-- shapes <- data.frame( -->
+<!--   shape_names = shape_names, -->
+<!--   x = c(1:7, 1:6, 1:3, 5, 1:3, 6, 2:3, 1:3), -->
+<!--   y = -rep(1:6, c(7, 6, 4, 4, 2, 3)) -->
+<!-- ) -->
+
+<!-- ggplot(shapes, aes(x, y)) + -->
+<!--   geom_point(aes(shape = shape_names), fill = "red", size = 5) + -->
+<!--   geom_text(aes(label = shape_names), nudge_y = -0.3, size = 3.5) + -->
+<!--   scale_shape_identity() + -->
+<!--   theme_void() -->
+<!-- ``` -->
+
+## Multiple geoms
+
+Because ggplot creates graphics in layers, we can layer multiple geoms:
+
+```{r, warning=FALSE, fig.align='center'}
+ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g)) +
+  geom_point() +
+  geom_smooth() +
+  xlab("Bill Depth (mm)") +
+  ylab("Body Mass (g)")
+```
+
+## Aesthetics with multiple geoms
+
+Now lets say we want 3 different colored smooth lines for the 3 origin airports,
+but we want the points to remain black. Will this code do the trick?
+
+```{r, fig.align='center'}
+ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g, color = species)) +
+  geom_point() +
+  geom_smooth() +
+  xlab("Bill Depth (mm)") +
+  ylab("Body Mass (g)")
+```
+
+. . .
+
+This is not quite right because we want the points in black.
+
+## Aesthetics with multiple geoms cont
+
+If we have multiple geom functions, aesthetics specified in `ggplot(aes())` 
+are global and applied to all geom functions. 
+
+So if we want to change the color of only the lines, not the points, then we specify this in `geom_smooth()`:
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g)) +
+  geom_point() +
+  geom_smooth(aes(color = species)) +
+  xlab("Bill Depth (mm)") +
+  ylab("Body Mass (g)")
+```
+
+## Aesthetics with multiple geoms cont
+
+And, lastly, maybe we want to change the line type.
+
+```{r, warning=FALSE, message=FALSE, fig.align='center'}
+ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g)) +
+  geom_point() +
+  geom_smooth(aes(color = species), linetype = "dashed") +
+  xlab("Bill Depth (mm)") +
+  ylab("Body Mass (g)")
+```
+
+<!-- ## Aesthetic arguments: linetype -->
+
+<!-- ```{r, echo = FALSE, fig.align='center'} -->
+<!-- lty <- c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") -->
+<!-- linetypes <- data.frame( -->
+<!--   y = seq_along(lty), -->
+<!--   lty = lty -->
+<!-- )  -->
+<!-- ggplot(linetypes, aes(0, y)) +  -->
+<!--   geom_segment(aes(xend = 5, yend = y, linetype = lty)) +  -->
+<!--   scale_linetype_identity() +  -->
+<!--   geom_text(aes(label = lty), hjust = 0, nudge_y = 0.2) + -->
+<!--   scale_x_continuous(NULL, breaks = NULL) +  -->
+<!--   scale_y_reverse(NULL, breaks = NULL) -->
+<!-- ``` -->
+
+## `facet_wrap()`
+
+- `facet_wrap()` splits a plot into panels based on a categorical variable. Each
+panel of the plot displays a subset of the data based on a one category of the
+categorical variable.
+
+- Any type of plot can be faceted by a categorical variable.
+
+. . .
+
+Code format:
+
+```{r, echo = TRUE, eval = FALSE}
+data |> 
+  ggplot(aes(x = var_1, y = var_2)) +
+  geom_point() +
+  facet_wrap(~var_3)
+```
+
+## facet wrap example
+
+```{r, echo = TRUE, warning = FALSE, fig.align='center'}
+penguins |> 
+  ggplot(aes(x = bill_length_mm, y = body_mass_g)) +
+  geom_point(color = curr_palette[4]) +
+  facet_wrap(~species) +
+  xlab("Bill Length (mm)") + ylab("Body Mass (g)")
+```
+
+
+## `facet_grid()`
+
+- `facet_grid()` splits a plot into a grid of panels based on the combinations of **two** 
+categorical variables.
+- One variable is displayed in the rows and the second variable is displayed in the columns.
+- Again, each panel of the plot is a subset of the data based on the two categories of the faceting variables.
+
+. . .
+
+Code format:
+
+```{r, echo = TRUE, eval = FALSE}
+data |> 
+  ggplot(aes(x = var_1, y = var_2)) +
+  geom_point() +
+  facet_grid(var_3 ~ var_4)
+```
+
+## facet grid example
+
+```{r, echo = TRUE, warning = FALSE, fig.align='center'}
+penguins |> 
+  ggplot(aes(x = bill_length_mm, y = body_mass_g)) +
+  geom_point(color = curr_palette[4]) +
+  facet_grid(species ~ sex) +
+  xlab("Bill Length (mm)") + ylab("Body Mass (g)")
+```
+
+<!-- ## Freeing axis scales -->
+
+<!-- In some scenarios, the values you are plotting will be very different between  -->
+<!-- groups on your faceted plot which can make it hard to see the information on the -->
+<!-- plot. -->
+
+<!-- . . . -->
+
+<!-- In this case, you may want to free an axis or axes of your plot to allow the -->
+<!-- axis range to be set for each group. -->
+
+<!-- . . . -->
+
+<!-- A limitation of freeing an axis or axes, is that it is hard to  -->
+<!-- see the differences between groups as they are on different scales. -->
+
+<!-- . . . -->
+
+<!-- To free up the axes, you can set the scales argument in `facet_wrap()` or `facet_grid()` to: -->
+
+<!-- - `"fixed"` (default) -->
+<!-- - `"free_x"` -->
+<!-- - `"free_y"` -->
+<!-- - `"free"` -->
+
+<!-- ## Free x-axis scale -->
+
+<!-- You can see that the plots in each column of panels (the columns are by `sex`), -->
+<!-- the plots are forced to have the same x-axis range. -->
+
+<!-- ```{r, echo = TRUE, fig.align='center'} -->
+<!-- penguins |>  -->
+<!--   ggplot(aes(x = bill_length_mm, y = body_mass_g)) + -->
+<!--   geom_point(color = curr_palette[4]) + -->
+<!--   facet_grid(species ~ sex, scales = "free_x") + -->
+<!--   xlab("Bill Length (mm)") + ylab("Body Mass (g)") -->
+<!-- ``` -->
+
+# gtsummary
+
+## `gt` package
+
+gt stand for "grammar of tables".
+
+. . .
+
+The `gt` package makes it easy to produce nice-looking *display* tables. 
+
+. . .
+
+What is meant by *display* is that the tables are output only, we do not want to use them as input ever again. 
+
+. . .
+
+The functions in `gt` work similarly to `ggplot2` where the table can be sequentially 
+updated and modified.
+
+## `gtsummary` package
+
+We don't have time to get into `gt`, but something that is worth spending a few slides on is `gtsummary`.
+
+The `gtsummary` package creates elegant and flexible publication-ready
+summary tables.
+
+It can be used to summarize data sets (our focus), regression models, and more.
+
+. . .
+
+`gtsummary` uses sensible defaults but also allows for a large degree of customization.
+
+i.e. Fast start up time but a great deal of flexibility for more complex implementations.
+
+## Data
+
+`trial` is an example data set in the `gtsummary` package with baseline characteristics of 200 cancer patients
+who received either Drug A or Drug B as well as outcome variables of their response to treatment.
+
+```{r}
+#| output-location: fragment
+slice_head(trial, n = 10) |> gt()
+```
+
+## Initial Summary Table
+
+If your data is tidy, `tbl_summary()` can be used to create a summary tables of all the variables in your data set. The output is meant to be **publication ready**.
+
+```{r}
+tbl_summary(trial)
+```
+
+## Include only specific vairables
+
+Select which variables to `include` in the table summary:
+
+```{r}
+#| code-line-numbers: "3"
+#| output-location: column
+tbl_summary(
+  trial,
+  include = c(age, stage, response)
+)
+```
+
+## Summaries by a category
+
+Use the `by` argument to calculate summary statistics separately by 
+category. 
+
+Here we calculate summary statistics by the treatment groups.
+
+```{r}
+#| code-line-numbers: "4"
+#| output-location: column
+tbl_summary(
+  trial,
+  include = c(age, stage, response),
+  by = trt
+)
+```
+
+## Adjust the included labels
+
+Change the included variables `label` using a list as follows:
+
+```{r}
+#| code-line-numbers: "6-9"
+#| output-location: column
+tbl_summary(
+  trial,
+  include = c(age, stage, response),
+  by = trt,
+  missing = "no",
+  label = list(
+    age ~ "Patient Age",
+    stage ~ "Tumor Stage"
+  )
+)
+```
+
+## Formula syntax
+
+Many of the arguments to `tbl_summary()` require formula syntax like with `label` on the previous slide.
+
+In general, this can be interpreted as: `select variables ~ specify what you want to do`.
+
+The previous example, setting labels, was relatively simple. i.e. `variable_name ~ "variable label"`, but this concept extends to more complex scenarios as we will see next. 
+
+When selecting variables, they can be quoted or unquoted and can also take advantage of the tidy select functions we have previously seen. e.g. `contains()`
+
+## Specify the statistics of interest
+
+Use the `statistic` argument in `tbl_summary()` to specify which statistics
+you want to calculate for your table. See the help documentation of 
+`tbl_summary()` for additional options of summary statistics.
+
+```{r}
+#| code-line-numbers: "7-11"
+#| output-location: column
+tbl_summary(
+  trial,
+  include = c(age, stage, response),
+  by = trt,
+  missing = "no",
+  label = list(age ~ "Patient Age", stage ~ "Tumor Stage"),
+  statistic = list(
+    all_continuous() ~ "{mean} ({sd})",
+    # all_continuous() ~ "{median} ({p25}, {p75})", ## default
+    all_categorical() ~ "{n} ({p}%)" ## default
+  )
+)
+```
+
+## Adding p-values
+
+Add a column to the table with p-values using `add_p()`:
+
+```{r}
+#| code-line-numbers: "9"
+#| output-location: column
+tbl_summary(
+  trial,
+  include = c(age, stage, response),
+  by = trt,
+  missing = "no",
+  label = list(age ~ "Patient Age", stage ~ "Tumor Stage"),
+  statistic = list(all_continuous() ~ "{mean} ({sd})")
+) |> 
+add_p()
+```
+
+`add_p()` detects the variable type and uses the appropriate statistical test.
+
+The statistical test performed can be customized. See `?add_p`
+
+## Add overall summary statistics
+
+Add a column to the table with overall summary statistics rather than split out
+by group using `add_overall()`:
+
+```{r}
+#| code-line-numbers: "10"
+#| output-location: column
+tbl_summary(
+  trial,
+  include = c(age, stage, response),
+  by = trt,
+  missing = "no",
+  label = list(age ~ "Patient Age", stage ~ "Tumor Stage"),
+  statistic = list(all_continuous() ~ "{mean} ({sd})")
+) |> 
+add_p() |> 
+add_overall()
+```
+
+## Add difference between groups
+
+```{r}
+#| code-line-numbers: "9"
+#| output-location: column
+tbl_summary(
+  trial,
+  include = c(age, stage, response),
+  by = trt,
+  missing = "no",
+  label = list(age ~ "Patient Age", stage ~ "Tumor Stage"),
+  statistic = list(all_continuous() ~ "{mean} ({sd})")
+) |> 
+  add_difference() 
+```
+
+*Note:* The default tests used are different, hence the slight difference in p-values.
+
+## `tbl_cross()`
+
+`tbl_cross()` allows you to create a cross table of variables.
+
+`tbl_cross()` is a wrapper for `tbl_summary()` that:
+
+- Automatically adds a spanning header to your table with the name or label of your comparison variable
+- Adds row and column margin totals 
+- Displays missing data in both row and column variables (`"ifany"`)
+
+. . .
+
+Here we compare treatment and tumor response:
+
+```{r}
+#| output-location: column
+tbl_cross(
+  trial,
+  row = trt,
+  col = response
+)
+```
+
+## `tbl_continuous()`
+
+`tbl_continuous()` summarize a continuous variable by one or more categorical variables:
+
+```{r}
+#| output-location: column
+tbl_continuous(
+  trial,
+  variable = marker,
+  include = grade,
+  by = stage
+) |>
+  add_p()
+```
+
+## References
+
+
