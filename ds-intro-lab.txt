@@ -25,7 +25,7 @@ library(ggplot2)
 library(gt)
 
 ## Load functions in package
-devtools::load_all(".")
+devtools::load_all()
 
 ## Load penguins data
 data("penguins")
