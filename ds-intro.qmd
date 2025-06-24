@@ -84,7 +84,7 @@ nasem_tbl <- tribble(
 
 nasem_tbl |>
   gt() |>
-  tab_header(title = md("**NASEM Taxonomy of Computational Reliability**")) |>
+  tab_header(title = md("**Computational Reliability**")) |>
   cols_label(
     `Same team?`            = md("Same<br>team?"),
     `Same data?`            = md("Same<br>data?"),
@@ -99,9 +99,11 @@ nasem_tbl |>
 
 If you are using Quarto (or R Markdown) and are able to compile your documents, you are already on your way to reproducibility.
 
-Quarto starts from a fresh session every time it is rendered, not relying on objects in your environment.
+Reasoning:
 
-It also runs linearly from top to bottom, forcing code to execute sequentially so every object is created before it is used, eliminating hidden dependencies and making the workflow fully reproducible.
+1. Quarto starts from a fresh session every time it is rendered, not relying on objects in your environment.
+
+2. Quarto runs linearly from top to bottom, forcing code to execute sequentially so every object is created before it is used, eliminating hidden dependencies.
 
 ## Document structure for reproducibility
 
@@ -496,7 +498,7 @@ Code format:
 . . .
 
 ::: {.callout-tip}
-`filter()` does not alter the original tibble. If you want to save the filtered data, you must assign the result to a new object. The same is true of other `dplyr` and `tidyr` functions.
+`filter()` does not alter the original tibble. If you want to save the filtered data, you must assign the result to a new object (or back to the same object). The same is true of other `dplyr` and `tidyr` functions.
 :::
 
 ## `filter()` example: equal to (`==`)
@@ -505,7 +507,7 @@ Use the double equal sign to test for equality.
 
 ```{r}
 penguins |> 
-  filter(species == "Adelie") |> slice_head(n = 10) |> gt()
+  filter(species == "Chinstrap") |> slice_head(n = 10) |> gt()
 ```
 
 <!-- ## `filter()` example: equal to (`==`) -->
@@ -528,11 +530,11 @@ Specify multiple conditions within `filter()` using `&` (symbol for **and**) or 
 
 . . . 
 
-Here we filter down to Adelie penguins from Torgersen island:
+Here we filter down to female Chinstrap penguins:
 
 ```{r}
 penguins |> 
-  filter(species == "Adelie" & island == "Torgersen") |> 
+  filter(species == "Chinstrap" & sex == "female") |>
   slice_head(n = 8) |> gt()
 ```
 
@@ -543,8 +545,8 @@ Alternatively, you can specify multiple conditions that each row must meet by se
 ```{r}
 penguins |> 
   filter(
-    species == "Adelie",
-    island == "Torgersen"
+    species == "Chinstrap",
+    sex == "female"
   ) |> slice_head(n = 8) |> gt()
 ```
 
@@ -1228,7 +1230,7 @@ ggplot(penguins, aes(x = bill_depth_mm, y = body_mass_g)) +
 
 ## Aesthetics with multiple geoms
 
-Now lets say we want 3 different colored smooth lines for the 3 origin airports,
+Now lets say we want 3 different colored smooth lines for the 3 species,
 but we want the points to remain black. Will this code do the trick?
 
 ```{r, fig.align='center'}
@@ -1388,15 +1390,9 @@ penguins |>
 
 gt stand for "grammar of tables".
 
-. . .
-
 The `gt` package makes it easy to produce nice-looking *display* tables. 
 
-. . .
-
 What is meant by *display* is that the tables are output only, we do not want to use them as input ever again. 
-
-. . .
 
 The functions in `gt` work similarly to `ggplot2` where the table can be sequentially 
 updated and modified.
@@ -1422,7 +1418,6 @@ i.e. Fast start up time but a great deal of flexibility for more complex impleme
 who received either Drug A or Drug B as well as outcome variables of their response to treatment.
 
 ```{r}
-#| output-location: fragment
 slice_head(trial, n = 10) |> gt()
 ```
 

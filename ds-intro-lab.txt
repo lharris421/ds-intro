@@ -4,7 +4,7 @@
 1. Create a new folder wherever you prefer to store your work BUT NOT IN ANOTHER PROJECT DIRECTORY
 2. Open RStudio, in the upper right click the project button -> create a "New Project..." from an "Existing Directory"
 3. In the console run: install.packages("usethis")
-4. In the console run: usethis::create_package("."), it will warn you that this is already a project (select to proceed) and then as if you want to overwrite the current.Rproj file, and again proceed.
+4. In the console run: usethis::create_package(".", check_name = FALSE), it will warn you that this is already a project (select to proceed) and then as if you want to overwrite the current.Rproj file, and again proceed.
 5. It will open a new R session, you can close the old one.
 
 NOTE: This will create a README.md, this is an excelent place to describe the purpose and structure of your project.
@@ -22,6 +22,7 @@ library(dplyr)
 library(tidyr)
 library(gtsummary)
 library(ggplot2)
+library(gt)
 
 ## Load functions in package
 devtools::load_all(".")
@@ -31,8 +32,8 @@ data("penguins")
 
 set.seed(1234)
 speed <- round(8 + 0.1*(penguins_raw$`Flipper Length (mm)` - mean(penguins_raw$`Flipper Length (mm)`, na.rm = TRUE)) + rnorm(length(penguins_raw$`Flipper Length (mm)`)), 1)
-swim_speed <- tibble(ID = penguins_raw$`Individual ID`, `swim speed (km/h)` = speed) %>%
-  group_by(ID) %>%
+swim_speed <- tibble(ID = penguins_raw$`Individual ID`, `swim speed (km/h)` = speed) |>
+  group_by(ID) |>
   summarise(`swim speed (km/h)` = first(`swim speed (km/h)`))
 ```
 

@@ -15,8 +15,8 @@ for (i in 1:niter) {
 }
 
 res <- list(
-  beta1_coefs = betas,
-  meta = list(script_name = "saving-demo.R", beta1 = 2, err_sd = 1)
+  meta = list(script_name = "saving-demo.R", beta1 = 2, err_sd = 1),
+  beta1_coefs = betas
 )
 
 saveRDS(res, file = "tmp_dir/saving-demo.rds")
@@ -26,8 +26,6 @@ rm(list = ls())
 
 res <- readRDS("tmp_dir/saving-demo.rds")
 hist(res$beta1_coefs)
-
-
 
 ## indexr example --------------------------------------------------------------
 library(indexr)
